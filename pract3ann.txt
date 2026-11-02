@@ -1,0 +1,131 @@
+# Import libraries
+import pandas as pd
+import numpy as np
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+# Step 1: Load dataset
+df = pd.read_csv("Churn_Modelling.csv")
+
+# Display dataset
+print("First five records:")
+print(df.head())
+
+print("\nDataset Shape:")
+print(df.shape)
+
+print("\nMissing Values:")
+print(df.isnull().sum())
+
+# Step 2: Separate features and target
+X = df.drop(
+    columns=["RowNumber", "CustomerId", "Surname", "Exited"]
+)
+
+y = df["Exited"]
+
+# Step 3: Convert categorical data into numerical data
+X = pd.get_dummies(
+    X,
+    columns=["Geography", "Gender"],
+    drop_first=True,
+    dtype=int
+)
+
+print("\nProcessed Features:")
+print(X.head())
+
+# Step 4: Split dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+# Step 5: Normalize the data
+scaler = StandardScaler()
+
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Step 6: Build Artificial Neural Network
+model = Sequential()
+
+# Input layer and first hidden layer
+model.add(Dense(
+    16,
+    activation="relu",
+    input_shape=(X_train.shape[1],)
+))
+
+# Second hidden layer
+model.add(Dense(8, activation="relu"))
+
+# Output layer
+model.add(Dense(1, activation="sigmoid"))
+
+# Step 7: Compile the model
+model.compile(
+    optimizer="adam",
+    loss="binary_crossentropy",
+    metrics=["accuracy"]
+)
+
+# Display model architecture
+model.summary()
+
+# Step 8: Train the model
+history = model.fit(
+    X_train,
+    y_train,
+    epochs=20,
+    batch_size=32,
+    validation_split=0.2,
+    verbose=1
+)
+
+# Step 9: Predict on test data
+y_probability = model.predict(X_test)
+
+# Convert probabilities into binary predictions
+y_pred = (y_probability >= 0.5).astype(int).ravel()
+
+# Step 10: Evaluate the model
+accuracy = accuracy_score(y_test, y_pred)
+
+cm = confusion_matrix(y_test, y_pred)
+
+print("\nModel Evaluation")
+print("Accuracy:", accuracy)
+
+print("\nConfusion Matrix:")
+print(cm)
+
+# Step 11: Plot training and validation accuracy
+import matplotlib.pyplot as plt
+
+plt.plot(history.history["accuracy"], label="Training Accuracy")
+plt.plot(history.history["val_accuracy"], label="Validation Accuracy")
+
+plt.title("ANN Model Accuracy")
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+plt.legend()
+plt.show()
+
+# Step 12: Plot training and validation loss
+plt.plot(history.history["loss"], label="Training Loss")
+plt.plot(history.history["val_loss"], label="Validation Loss")
+
+plt.title("ANN Model Loss")
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+plt.legend()
+plt.show()
